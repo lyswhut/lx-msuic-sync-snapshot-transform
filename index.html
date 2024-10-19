@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LX Music 同步快照文件转列表备份文件</title>
+  <style>
+    code {
+      display: inline-flex;
+      background-color: #eee;
+      padding: 0.1em 0.2em;
+      border-radius: 0.2em;
+    }
+  </style>
+</head>
+<body>
+  <h1>LX Music 同步快照文件转列表备份文件</h1>
+  <p>PC 端以 <strong>服务端模式</strong> 运行的同步快照文件位置：</p>
+  <ul>
+    <li>Windows (直接将该路径粘贴到文件管理器地址栏后回车即可): <code>%APPDATA%/lx-music-desktop/LxDatas/sync/server/list/snapshot</code></li>
+    <li>Linux: <code>~/.config/lx-music-desktop/LxDatas/sync/server/list/snapshot</code> 或 <code>$XDG_CONFIG_HOME/lx-music-desktop/LxDatas/sync/server/list/snapshot</code></li>
+    <li>MacOS: <code>~/Library/Application Support/lx-music-desktop/LxDatas/sync/server/list/snapshot</code></li>
+  </ul>
+  <p>以 <strong>独立版同步服务</strong> 运行的同步快照文件位置： <code>data/users/&lt;用户名&gt;/list/snapshot</code></p>
+  <hr>
+  <h3>选择快照文件（以 <code>snapshot_</code> 加一串数字或英文字母组成的无扩展名文件）：</h3>
+  <input type="file" name="snapshot" id="file-input">
+
+  <script>
+    const defaultList = {
+      id: 'default',
+      name: 'list__name_default',
+    }
+    const loveList = {
+      id: 'love',
+      name: 'list__name_love',
+    }
+    const transform = (data) => {
+      return JSON.stringify({
+        type: 'playList_v2',
+        data: [
+          { ...defaultList, list: data.defaultList || [] },
+          { ...loveList, list: data.loveList || [] },
+          ...data.userList,
+        ],
+      })
+    };
+    const downloadFile = data => {
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'transformed_data.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    document.getElementById('file-input').addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target.result;
+        try {
+          const json = JSON.parse(data);
+          downloadFile(transform(json));
+        } catch (error) {
+          console.error('Error parsing JSON:', error);
+          alert('Error parsing JSON:', error.message);
+        }
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
